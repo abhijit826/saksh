@@ -1,14 +1,14 @@
 import React from 'react';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
+// import Navbar from '../components/Navbar';
+// import Footer from '../components/Footer';
 import TripDetails from '../components/TripDetails';
 
 const TripDetailsPage: React.FC = () => {
   return (
     <div>
-      <Navbar />
+      {/* <Navbar /> */}
       <TripDetails />
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 };

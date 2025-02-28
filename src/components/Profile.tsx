@@ -1,25 +1,48 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { User, MapPin, Globe, Plane } from 'lucide-react';
-
-// Dummy data for the logged-in user with additional travel-related fields
-const user = {
-  id: 1,
-  name: 'John Doe',
-  email: 'john@example.com',
-  location: 'New York, USA',
-  trips: 12,
-  favoriteDestination: 'Paris',
-};
-
-// Animation variants for the card
-const cardVariants = {
-  hidden: { opacity: 0, y: 50 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
-  hover: { scale: 1.05, boxShadow: '0 10px 20px rgba(0, 0, 0, 0.1)', transition: { duration: 0.3 } },
-};
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const Profile: React.FC = () => {
+  const [user, setUser] = useState<any>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          navigate('/auth');
+          return;
+        }
+
+        const response = await axios.get('http://localhost:5000/api/profile', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setUser(response.data);
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+        navigate('/auth');
+      }
+    };
+
+    fetchUserProfile();
+  }, [navigate]);
+
+  if (!user) {
+    return <div>Loading...</div>;
+  }
+
+  // Animation variants for the card
+  const cardVariants = {
+    hidden: { opacity: 0, y: 50 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
+    hover: { scale: 1.05, boxShadow: '0 10px 20px rgba(0, 0, 0, 0.1)', transition: { duration: 0.3 } },
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-teal-50 to-purple-50 flex flex-col items-center py-12">
       <motion.div

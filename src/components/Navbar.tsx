@@ -1,10 +1,17 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Compass, User, Menu, X, ChevronDown } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = React.useState(false);
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
+  const navigate = useNavigate();
+  const token = localStorage.getItem('token');
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
 
   return (
     <nav className="bg-white shadow-md">
@@ -24,42 +31,41 @@ const Navbar: React.FC = () => {
             <Link to="/wallet" className="px-3 py-2 rounded-md text-sm font-medium text-gray-900 hover:text-indigo-600">
               Travel Wallet
             </Link>
-            <div className="relative">
-              <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="px-3 py-2 rounded-md text-sm font-medium text-gray-900 hover:text-indigo-600 flex items-center"
-              >
-                <User className="h-5 w-5" />
-                <ChevronDown className="ml-1 h-4 w-4" />
-              </button>
-              {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-50">
-                  <Link 
-                    to="/profile" 
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => setDropdownOpen(false)}
-                  >
-                    Profile
-                  </Link>
-                  <Link 
-                    to="/mytrips" 
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => setDropdownOpen(false)}
-                  >
-                    My Trips
-                  </Link>
-                  <button 
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => {
-                      setDropdownOpen(false);
-                      // Add logout functionality here
-                    }}
-                  >
-                    Logout
-                  </button>
-                </div>
-              )}
-            </div>
+            {token ? (
+              <div className="relative">
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-900 hover:text-indigo-600 flex items-center"
+                >
+                  <User className="h-5 w-5" />
+                  <ChevronDown className="ml-1 h-4 w-4" />
+                </button>
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-50">
+                    <Link 
+                      to="/profile" 
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      Profile
+                    </Link>
+                    <Link 
+                      to="/mytrips" 
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      My Trips
+                    </Link>
+                    <button 
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={handleLogout}
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : null}
           </div>
           
           <div className="flex items-center md:hidden">
@@ -91,13 +97,30 @@ const Navbar: React.FC = () => {
             >
               Travel Wallet
             </Link>
-            <Link 
-              to="/profile" 
-              className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-indigo-600"
-              onClick={() => setIsOpen(false)}
-            >
-              Profile
-            </Link>
+            {token ? (
+              <>
+                <Link 
+                  to="/profile" 
+                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-indigo-600"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Profile
+                </Link>
+                <Link 
+                  to="/mytrips" 
+                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-indigo-600"
+                  onClick={() => setIsOpen(false)}
+                >
+                  My Trips
+                </Link>
+                <button 
+                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-indigo-600"
+                  onClick={handleLogout}
+                >
+                  Logout
+                </button>
+              </>
+            ) : null}
           </div>
         </div>
       )}

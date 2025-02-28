@@ -27,6 +27,7 @@ const TripForm: React.FC = () => {
     setIsGenerating(true);
     try {
       const response = await axios.post('http://localhost:5000/api/generate-itinerary', preferences);
+      console.log('API Response:', response.data); // Debugging: Log the API response
       navigate('/trip-details', { state: { itinerary: response.data } });
     } catch (error) {
       console.error('Error generating itinerary:', error);

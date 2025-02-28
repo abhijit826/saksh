@@ -1,9 +1,11 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { MapPin, Clock, CreditCard, Users } from 'lucide-react';
 
-const Hero: React.FC = () => {
+interface HeroProps {
+  handleCreateTripClick: () => void;
+}
+
+const Hero: React.FC<HeroProps> = ({ handleCreateTripClick }) => {
   return (
     <div className="relative bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto">
@@ -43,26 +45,13 @@ const Hero: React.FC = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.4 }}
                 >
-                  <Link
-                    to="/create-trip"
+                  <button
+                    onClick={handleCreateTripClick}
                     className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 md:py-4 md:text-lg md:px-10"
                   >
                     Create Your Trip
-                  </Link>
+                  </button>
                 </motion.div>
-                {/* <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.6 }}
-                  className="mt-3 sm:mt-0 sm:ml-3"
-                >
-                  <Link
-                    to="/features"
-                    className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 md:py-4 md:text-lg md:px-10"
-                  >
-                    Learn More
-                  </Link>
-                </motion.div> */}
               </div>
             </div>
           </main>

@@ -7,17 +7,25 @@ import GeoGuidePage from './pages/GeoGuidePage';
 import WalletPage from './pages/WalletPage';
 import Profile from './components/Profile';
 import MyTrips from './components/MyTrips';
+import Navbar from './components/Navbar';
+import AuthPage from './components/auth/AuthPage';
+import Logout from './components/auth/Logout';
+import ProtectedRoute from './components/ProtectedRoute';
+
 function App() {
   return (
     <Router>
+      <Navbar />
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/create-trip" element={<CreateTripPage />} />
+        <Route path="/create-trip" element={<ProtectedRoute><CreateTripPage /></ProtectedRoute>} />
         <Route path="/trip-details" element={<TripDetailsPage />} />
         <Route path="/geo-guide" element={<GeoGuidePage />} />
-        <Route path="/wallet" element={<WalletPage />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/mytrips" element={<MyTrips />} />
+        <Route path="/wallet" element={<ProtectedRoute><WalletPage /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/mytrips" element={<ProtectedRoute><MyTrips /></ProtectedRoute>} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/logout" element={<Logout />} />
       </Routes>
     </Router>
   );
