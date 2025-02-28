@@ -1,36 +1,52 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { CreditCard, Import as Passport, FileText, Plus, Edit, Trash2, Lock, Shield, AlertCircle } from 'lucide-react';
-import { TravelDocument } from '../types';
+import { 
+  CreditCard, 
+  FileText, // Use FileText instead of Passport
+  Plus, 
+  Edit, 
+  Trash2, 
+  Lock, 
+  Shield, 
+  AlertCircle,
+  Syringe,
+  Car,
+  Globe,
+  User,
+  Briefcase,
+} from 'lucide-react';
 
-// Mock data for travel documents
+// Define TravelDocument interface inline
+interface TravelDocument {
+  id: string;
+  type: 'passport' | 'visa' | 'creditCard' | 'vaccination' | 'drivingLicense' | 'internationalPermit' | 'nationalId' | 'insurance';
+  number: string;
+  expiryDate: string;
+  country?: string;
+  embassy?: {
+    name: string;
+    address: string;
+    phone: string;
+    email: string;
+  };
+  issuer?: string;
+  vaccineType?: string;
+  doseDates?: string[];
+  insuranceProvider?: string;
+  policyNumber?: string;
+  coverageDetails?: string;
+}
+
+// Mock data
 const mockDocuments: TravelDocument[] = [
-  {
-    type: 'passport',
-    id: 'doc-1',
-    number: 'P12345678',
-    expiryDate: '2028-05-15',
-    country: 'United States',
-  },
-  {
-    type: 'visa',
-    id: 'doc-2',
-    number: 'V87654321',
-    expiryDate: '2023-12-10',
-    country: 'Japan',
-    embassy: {
-      name: 'Embassy of Japan in the United States',
-      address: '2520 Massachusetts Avenue NW, Washington, DC 20008',
-      phone: '+1 202-238-6700',
-      email: 'info@us.emb-japan.go.jp',
-    },
-  },
-  {
-    type: 'creditCard',
-    id: 'doc-3',
-    number: '**** **** **** 4321',
-    expiryDate: '2026-09-30',
-  },
+  { type: 'passport', id: 'doc-1', number: 'P12345678', expiryDate: '2028-05-15', country: 'United States' },
+  { type: 'visa', id: 'doc-2', number: 'V87654321', expiryDate: '2023-12-10', country: 'Japan', embassy: { name: 'Embassy of Japan', address: '2520 Massachusetts Ave', phone: '+1 202-238-6700', email: 'info@us.emb-japan.go.jp' } },
+  { type: 'creditCard', id: 'doc-3', number: '**** **** **** 4321', expiryDate: '2026-09-30' },
+  { type: 'vaccination', id: 'doc-4', number: 'VAC-456789', expiryDate: '2025-12-31', vaccineType: 'COVID-19', doseDates: ['2021-03-15', '2021-04-12'], issuer: 'CDC', country: 'United States' },
+  { type: 'drivingLicense', id: 'doc-5', number: 'DL-987654', expiryDate: '2027-06-30', country: 'United States', issuer: 'DMV California' },
+  { type: 'internationalPermit', id: 'doc-6', number: 'IP-123456', expiryDate: '2026-01-15', country: 'United States', issuer: 'AAA' },
+  { type: 'nationalId', id: 'doc-7', number: 'NID-789123', expiryDate: '2030-09-01', country: 'United States', issuer: 'Government' },
+  { type: 'insurance', id: 'doc-8', number: 'INS-654321', expiryDate: '2025-11-30', insuranceProvider: 'Global Travel Insurance', policyNumber: 'GTI-2023-654321', coverageDetails: 'Medical & Trip Cancellation' },
 ];
 
 const TravelWallet: React.FC = () => {
@@ -43,32 +59,40 @@ const TravelWallet: React.FC = () => {
     number: '',
     expiryDate: '',
     country: '',
+    issuer: '',
+    vaccineType: '',
+    doseDates: [],
+    insuranceProvider: '',
+    policyNumber: '',
+    coverageDetails: '',
   });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const getDocumentIcon = (type: string) => {
     switch (type) {
-      case 'passport':
-        return <Passport className="h-6 w-6 text-blue-500" />;
-      case 'visa':
-        return <FileText className="h-6 w-6 text-green-500" />;
-      case 'creditCard':
-        return <CreditCard className="h-6 w-6 text-purple-500" />;
-      default:
-        return <FileText className="h-6 w-6 text-gray-500" />;
+      case 'passport': return <FileText className="h-6 w-6 text-blue-500" />; // Replaced Passport with FileText
+      case 'visa': return <FileText className="h-6 w-6 text-green-500" />;
+      case 'creditCard': return <CreditCard className="h-6 w-6 text-purple-500" />;
+      case 'vaccination': return <Syringe className="h-6 w-6 text-red-500" />;
+      case 'drivingLicense': return <Car className="h-6 w-6 text-indigo-500" />;
+      case 'internationalPermit': return <Globe className="h-6 w-6 text-teal-500" />;
+      case 'nationalId': return <User className="h-6 w-6 text-orange-500" />;
+      case 'insurance': return <Briefcase className="h-6 w-6 text-gray-500" />;
+      default: return <FileText className="h-6 w-6 text-gray-500" />;
     }
   };
 
   const getDocumentTitle = (type: string) => {
     switch (type) {
-      case 'passport':
-        return 'Passport';
-      case 'visa':
-        return 'Visa';
-      case 'creditCard':
-        return 'Credit Card';
-      default:
-        return 'Document';
+      case 'passport': return 'Passport';
+      case 'visa': return 'Visa';
+      case 'creditCard': return 'Credit Card';
+      case 'vaccination': return 'Vaccination Certificate';
+      case 'drivingLicense': return 'Driving License';
+      case 'internationalPermit': return 'International Driving Permit';
+      case 'nationalId': return 'National ID Card';
+      case 'insurance': return 'Insurance Details';
+      default: return 'Document';
     }
   };
 
@@ -76,22 +100,14 @@ const TravelWallet: React.FC = () => {
     const expiry = new Date(expiryDate);
     const now = new Date();
     const monthsUntilExpiry = (expiry.getFullYear() - now.getFullYear()) * 12 + (expiry.getMonth() - now.getMonth());
-    
-    if (expiry < now) {
-      return { status: 'expired', className: 'bg-red-100 text-red-800' };
-    } else if (monthsUntilExpiry <= 3) {
-      return { status: 'expiring soon', className: 'bg-yellow-100 text-yellow-800' };
-    } else {
-      return { status: 'valid', className: 'bg-green-100 text-green-800' };
-    }
+    if (expiry < now) return { status: 'expired', className: 'bg-red-100 text-red-800' };
+    if (monthsUntilExpiry <= 3) return { status: 'expiring soon', className: 'bg-yellow-100 text-yellow-800' };
+    return { status: 'valid', className: 'bg-green-100 text-green-800' };
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+    setFormData({ ...formData, [name]: value });
   };
 
   const resetForm = () => {
@@ -100,6 +116,12 @@ const TravelWallet: React.FC = () => {
       number: '',
       expiryDate: '',
       country: '',
+      issuer: '',
+      vaccineType: '',
+      doseDates: [],
+      insuranceProvider: '',
+      policyNumber: '',
+      coverageDetails: '',
     });
     setShowAddForm(false);
     setShowEditForm(false);
@@ -113,13 +135,18 @@ const TravelWallet: React.FC = () => {
 
     const newDocument: TravelDocument = {
       id: `doc-${Date.now()}`,
-      type: formData.type as 'passport' | 'visa' | 'creditCard',
+      type: formData.type as TravelDocument['type'],
       number: formData.number,
       expiryDate: formData.expiryDate,
-      country: formData.country,
+      country: formData.country || undefined,
+      issuer: formData.issuer || undefined,
+      vaccineType: formData.vaccineType || undefined,
+      doseDates: formData.doseDates || undefined,
+      insuranceProvider: formData.insuranceProvider || undefined,
+      policyNumber: formData.policyNumber || undefined,
+      coverageDetails: formData.coverageDetails || undefined,
     };
 
-    // Add embassy details for visa
     if (formData.type === 'visa' && formData.country) {
       newDocument.embassy = {
         name: `Embassy of ${formData.country}`,
@@ -144,13 +171,18 @@ const TravelWallet: React.FC = () => {
       if (doc.id === selectedDocument.id) {
         const updatedDoc: TravelDocument = {
           ...doc,
-          type: formData.type as 'passport' | 'visa' | 'creditCard',
+          type: formData.type as TravelDocument['type'],
           number: formData.number,
           expiryDate: formData.expiryDate,
-          country: formData.country,
+          country: formData.country || undefined,
+          issuer: formData.issuer || undefined,
+          vaccineType: formData.vaccineType || undefined,
+          doseDates: formData.doseDates || doc.doseDates,
+          insuranceProvider: formData.insuranceProvider || undefined,
+          policyNumber: formData.policyNumber || undefined,
+          coverageDetails: formData.coverageDetails || undefined,
         };
 
-        // Update embassy details for visa
         if (formData.type === 'visa' && formData.country) {
           updatedDoc.embassy = doc.embassy || {
             name: `Embassy of ${formData.country}`,
@@ -174,7 +206,6 @@ const TravelWallet: React.FC = () => {
 
   const handleDeleteDocument = () => {
     if (!selectedDocument) return;
-
     const updatedDocuments = documents.filter(doc => doc.id !== selectedDocument.id);
     setDocuments(updatedDocuments);
     setSelectedDocument(null);
@@ -183,12 +214,17 @@ const TravelWallet: React.FC = () => {
 
   const startEditDocument = () => {
     if (!selectedDocument) return;
-
     setFormData({
       type: selectedDocument.type,
       number: selectedDocument.number,
       expiryDate: selectedDocument.expiryDate,
       country: selectedDocument.country || '',
+      issuer: selectedDocument.issuer || '',
+      vaccineType: selectedDocument.vaccineType || '',
+      doseDates: selectedDocument.doseDates || [],
+      insuranceProvider: selectedDocument.insuranceProvider || '',
+      policyNumber: selectedDocument.policyNumber || '',
+      coverageDetails: selectedDocument.coverageDetails || '',
     });
     setShowEditForm(true);
   };
@@ -196,29 +232,30 @@ const TravelWallet: React.FC = () => {
   const renderForm = () => (
     <form className="space-y-6">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Document Type
-        </label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Document Type</label>
         <select
           name="type"
-          value={formData.type}
+          value={formData.type || ''}
           onChange={handleInputChange}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
         >
           <option value="passport">Passport</option>
           <option value="visa">Visa</option>
           <option value="creditCard">Credit Card</option>
+          <option value="vaccination">Vaccination Certificate</option>
+          <option value="drivingLicense">Driving License</option>
+          <option value="internationalPermit">International Driving Permit</option>
+          <option value="nationalId">National ID Card</option>
+          <option value="insurance">Insurance Details</option>
         </select>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Document Number
-        </label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Document Number</label>
         <input
           type="text"
           name="number"
-          value={formData.number}
+          value={formData.number || ''}
           onChange={handleInputChange}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
           placeholder="Enter document number"
@@ -226,32 +263,96 @@ const TravelWallet: React.FC = () => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Expiry Date
-        </label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
         <input
           type="date"
           name="expiryDate"
-          value={formData.expiryDate}
+          value={formData.expiryDate || ''}
           onChange={handleInputChange}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
         />
       </div>
 
-      {(formData.type === 'passport' || formData.type === 'visa') && (
+      {(formData.type === 'passport' || formData.type === 'visa' || formData.type === 'vaccination' || 
+        formData.type === 'drivingLicense' || formData.type === 'internationalPermit' || formData.type === 'nationalId') && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Country
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
           <input
             type="text"
             name="country"
-            value={formData.country}
+            value={formData.country || ''}
             onChange={handleInputChange}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="Enter country"
           />
         </div>
+      )}
+
+      {(formData.type === 'vaccination' || formData.type === 'drivingLicense' || 
+        formData.type === 'internationalPermit' || formData.type === 'nationalId') && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Issuer</label>
+          <input
+            type="text"
+            name="issuer"
+            value={formData.issuer || ''}
+            onChange={handleInputChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="Enter issuer"
+          />
+        </div>
+      )}
+
+      {formData.type === 'vaccination' && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Vaccine Type</label>
+          <input
+            type="text"
+            name="vaccineType"
+            value={formData.vaccineType || ''}
+            onChange={handleInputChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+            placeholder="Enter vaccine type"
+          />
+        </div>
+      )}
+
+      {formData.type === 'insurance' && (
+        <>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Insurance Provider</label>
+            <input
+              type="text"
+              name="insuranceProvider"
+              value={formData.insuranceProvider || ''}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Enter insurance provider"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Policy Number</label>
+            <input
+              type="text"
+              name="policyNumber"
+              value={formData.policyNumber || ''}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Enter policy number"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Coverage Details</label>
+            <input
+              type="text"
+              name="coverageDetails"
+              value={formData.coverageDetails || ''}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Enter coverage details"
+            />
+          </div>
+        </>
       )}
 
       <div className="flex justify-end space-x-3">
@@ -301,7 +402,7 @@ const TravelWallet: React.FC = () => {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Travel Wallet</h1>
         <p className="text-gray-600">
-          Securely store and manage your travel documents, credit cards, passports, and visas in one place.
+          Securely store and manage your travel documents in one place.
         </p>
       </div>
 
@@ -313,7 +414,7 @@ const TravelWallet: React.FC = () => {
           <div className="ml-4">
             <h2 className="text-lg font-medium text-gray-900">Blockchain-Secured Documents</h2>
             <p className="text-gray-600 mt-1">
-              Your documents are encrypted and secured using blockchain technology. Only you have access to your sensitive information.
+              Your documents are encrypted and secured using blockchain technology.
             </p>
           </div>
         </div>
@@ -345,7 +446,6 @@ const TravelWallet: React.FC = () => {
               <div className="space-y-4">
                 {documents.map((doc) => {
                   const expiryStatus = getExpiryStatus(doc.expiryDate);
-                  
                   return (
                     <motion.div
                       key={doc.id}
@@ -400,14 +500,14 @@ const TravelWallet: React.FC = () => {
                     </h2>
                   </div>
                   <div className="flex space-x-2">
-                    <button 
+                    <button
                       className="p-2 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200"
                       onClick={startEditDocument}
                       title="Edit document"
                     >
                       <Edit className="h-5 w-5" />
                     </button>
-                    <button 
+                    <button
                       className="p-2 bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200"
                       onClick={() => setShowDeleteConfirm(true)}
                       title="Delete document"
@@ -438,6 +538,30 @@ const TravelWallet: React.FC = () => {
                         <p className="text-lg font-medium text-gray-900">{selectedDocument.country}</p>
                       </div>
                     )}
+                    {selectedDocument.issuer && (
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Issuer</p>
+                        <p className="text-lg font-medium text-gray-900">{selectedDocument.issuer}</p>
+                      </div>
+                    )}
+                    {selectedDocument.vaccineType && (
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Vaccine Type</p>
+                        <p className="text-lg font-medium text-gray-900">{selectedDocument.vaccineType}</p>
+                      </div>
+                    )}
+                    {selectedDocument.insuranceProvider && (
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Insurance Provider</p>
+                        <p className="text-lg font-medium text-gray-900">{selectedDocument.insuranceProvider}</p>
+                      </div>
+                    )}
+                    {selectedDocument.policyNumber && (
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Policy Number</p>
+                        <p className="text-lg font-medium text-gray-900">{selectedDocument.policyNumber}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -459,14 +583,44 @@ const TravelWallet: React.FC = () => {
                   </div>
                 )}
 
-                {selectedDocument.type === 'visa' && getExpiryStatus(selectedDocument.expiryDate).status !== 'valid' && (
+                {selectedDocument.doseDates && selectedDocument.doseDates.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-medium text-gray-900 mb-3">Vaccination Details</h3>
+                    <div className="bg-gray-50 rounded-lg p-6">
+                      <div className="grid grid-cols-1 gap-2">
+                        {selectedDocument.doseDates.map((date, index) => (
+                          <p key={index} className="text-gray-600">
+                            Dose {index + 1}: {new Date(date).toLocaleDateString()}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {selectedDocument.coverageDetails && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-medium text-gray-900 mb-3">Coverage Details</h3>
+                    <div className="bg-gray-50 rounded-lg p-6">
+                      <p className="text-gray-600">{selectedDocument.coverageDetails}</p>
+                    </div>
+                  </div>
+                )}
+
+                {(selectedDocument.type === 'visa' || selectedDocument.type === 'vaccination' || 
+                  selectedDocument.type === 'drivingLicense' || selectedDocument.type === 'internationalPermit' || 
+                  selectedDocument.type === 'nationalId' || selectedDocument.type === 'insurance') && 
+                  getExpiryStatus(selectedDocument.expiryDate).status !== 'valid' && (
                   <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-4">
                     <div className="flex items-start">
                       <AlertCircle className="h-5 w-5 text-yellow-500 mt-0.5" />
                       <div className="ml-3">
-                        <h3 className="text-sm font-medium text-yellow-800">Visa Expiring Soon</h3>
+                        <h3 className="text-sm font-medium text-yellow-800">
+                          {selectedDocument.type.charAt(0).toUpperCase() + selectedDocument.type.slice(1)} Expiring Soon
+                        </h3>
                         <p className="text-sm text-yellow-700 mt-1">
-                          Your visa for {selectedDocument.country} is expiring on {new Date(selectedDocument.expiryDate).toLocaleDateString()}. Consider renewing it if you plan to travel again.
+                          Your {getDocumentTitle(selectedDocument.type).toLowerCase()} is expiring on 
+                          {new Date(selectedDocument.expiryDate).toLocaleDateString()}. Consider renewing it.
                         </p>
                       </div>
                     </div>

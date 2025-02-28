@@ -14,9 +14,11 @@ export interface POI {
   category: string;
 }
 
+
+// types.ts
 export interface TravelDocument {
-  type: 'passport' | 'visa' | 'creditCard';
   id: string;
+  type: 'passport' | 'visa' | 'creditCard' | 'vaccination' | 'drivingLicense' | 'internationalPermit' | 'nationalId' | 'insurance';
   number: string;
   expiryDate: string;
   country?: string;
@@ -26,8 +28,12 @@ export interface TravelDocument {
     phone: string;
     email: string;
   };
+  issuer?: string;        // For driving license, national ID, insurance
+  vaccineType?: string;   // For vaccination certificate
+  doseCount?: number;     // For vaccination certificate
+  insuranceProvider?: string; // For insurance
+  coverageDetails?: string;   // For insurance
 }
-
 export interface Trip {
   id: string;
   destination: string;

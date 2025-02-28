@@ -5,7 +5,7 @@ import CreateTripPage from './pages/CreateTripPage';
 import TripDetailsPage from './pages/TripDetailsPage';
 import GeoGuidePage from './pages/GeoGuidePage';
 import WalletPage from './pages/WalletPage';
-
+import Profile from './components/Profile';
 function App() {
   return (
     <Router>
@@ -15,6 +15,7 @@ function App() {
         <Route path="/trip-details" element={<TripDetailsPage />} />
         <Route path="/geo-guide" element={<GeoGuidePage />} />
         <Route path="/wallet" element={<WalletPage />} />
+        <Route path="/profile" element={<Profile />} />
       </Routes>
     </Router>
   );
