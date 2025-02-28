@@ -5,12 +5,22 @@ import axios from 'axios';
 import { MapPin, Clock, CreditCard, Users, ArrowRight, Loader } from 'lucide-react';
 import { TripPreferences } from '../types';
 
+const airportCodes = [
+  { code: 'JFK', name: 'John F. Kennedy International Airport' },
+  { code: 'LAX', name: 'Los Angeles International Airport' },
+  { code: 'ORD', name: "O'Hare International Airport" },
+  // Add more airport codes as needed
+];
+
 const TripForm: React.FC = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [preferences, setPreferences] = useState<TripPreferences>({
+    origin: '',
     destination: '',
+    maxPrice: '',
+    departureDate: '',
     duration: '',
     budget: '',
     companions: '',
@@ -39,9 +49,11 @@ const TripForm: React.FC = () => {
 
   const renderStep = () => {
     const stepComponents = [
-      { icon: MapPin, title: 'Where do you want to Explore?', field: 'destination', placeholder: 'Enter a destination (e.g., Paris, Japan, Caribbean)', type: 'text' },
+      { icon: MapPin, title: 'Where are you starting from?', field: 'origin', placeholder: 'Enter your origin (e.g., JFK)', type: 'text' },
+      { icon: MapPin, title: 'Where do you want to Explore?', field: 'destination', placeholder: 'Enter a destination (e.g., LAX)', type: 'text' },
+      { icon: CreditCard, title: 'What is your Budget?', field: 'maxPrice', placeholder: 'Enter your budget (e.g., 1000)', type: 'text' },
+      { icon: Clock, title: 'When do you want to depart?', field: 'departureDate', placeholder: 'Enter departure date (e.g., 2023-12-25)', type: 'text' },
       { icon: Clock, title: 'How long is your Trip?', field: 'duration', options: ['Weekend Getaway (1-3 days)', 'Short Trip (4-7 days)', 'Medium Trip (1-2 weeks)', 'Long Trip (2+ weeks)'] },
-      { icon: CreditCard, title: 'What is your Budget?', field: 'budget', options: ['Budget Friendly', 'Moderate', 'Luxury', 'Ultra Luxury'] },
       { icon: Users, title: 'Who are you traveling with?', field: 'companions', options: ['Solo Travel', 'Couple', 'Family with Kids', 'Group of Friends', 'Business Trip'] },
     ];
 
@@ -103,10 +115,10 @@ const TripForm: React.FC = () => {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Your Perfect Trip</h1>
         <p className="text-gray-600">Answer a few questions and our AI will generate a personalized travel itinerary for you.</p>
         <div className="mb-8 flex items-center">
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3, 4, 5, 6].map((i) => (
             <React.Fragment key={i}>
               <div className={`flex items-center justify-center w-10 h-10 rounded-full ${i <= step ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600'}`}>{i}</div>
-              {i < 4 && <div className={`flex-1 h-1 mx-2 ${i < step ? 'bg-indigo-600' : 'bg-gray-200'}`}></div>}
+              {i < 6 && <div className={`flex-1 h-1 mx-2 ${i < step ? 'bg-indigo-600' : 'bg-gray-200'}`}></div>}
             </React.Fragment>
           ))}
         </div>
