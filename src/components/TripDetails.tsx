@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -15,7 +15,9 @@ import {
   Cloud, 
   Wind,
   Tag,
+  Users as UsersIcon,
 } from 'lucide-react';
+import { GoogleMap, LoadScript, DirectionsService, DirectionsRenderer, TrafficLayer } from '@react-google-maps/api';
 
 const TripDetails: React.FC = () => {
   const location = useLocation();
@@ -24,6 +26,8 @@ const TripDetails: React.FC = () => {
 
   const [activeDay, setActiveDay] = useState(1);
   const [showMap, setShowMap] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
+  const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer | null>(null);
 
   const itinerary = itineraryData?.itinerary || { dailyPlans: [], rawText: 'No itinerary available' };
 
@@ -31,23 +35,16 @@ const TripDetails: React.FC = () => {
     console.log('Raw Itinerary Data:', itineraryData);
     console.log('Extracted Itinerary:', itinerary);
     console.log('Preferences:', preferences);
-  }, [itineraryData, itinerary, preferences]);
-
-  if (!itineraryData) {
-    return (
-      <div className="max-w-6xl mx-auto px-4 py-12 text-center">
-        <h1 className="text-3xl font-bold text-gray-900">Oops!</h1>
-        <p className="text-gray-600 mt-2">No itinerary data available. Please try creating a trip again.</p>
-      </div>
-    );
-  }
+    if (showMap && itinerary.dailyPlans[activeDay - 1]?.activities) {
+      console.log('Map Locations:', itinerary.dailyPlans[activeDay - 1].activities.map(a => a.location));
+    }
+  }, [itineraryData, itinerary, preferences, showMap, activeDay]);
 
   const WeatherIcon = ({ condition }: { condition: string }) => {
     switch (condition.toLowerCase()) {
       case 'rain': return <CloudRain className="h-6 w-6 text-blue-500" />;
       case 'cloudy': return <Cloud className="h-6 w-6 text-gray-500" />;
-      case 'clear': return <Sun className="h-6 w-6 text-yellow-500" />;
-      case 'sunny': return <Sun className="h-6 w-6 text-yellow-500" />;
+      case 'clear': case 'sunny': return <Sun className="h-6 w-6 text-yellow-500" />;
       default: return <Wind className="h-6 w-6 text-gray-400" />;
     }
   };
@@ -61,6 +58,67 @@ const TripDetails: React.FC = () => {
     hidden: { opacity: 0, y: 10 },
     visible: { opacity: 1, y: 0 },
   };
+
+  const mapContainerStyle = {
+    height: '20rem',
+    width: '100%',
+  };
+
+  const center = { lat: 34.0522, lng: -118.2437 }; // Default to LAX
+
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'YOUR_FALLBACK_API_KEY';
+  if (!apiKey || apiKey === 'YOUR_FALLBACK_API_KEY') {
+    console.warn('Google Maps API Key is not defined or using fallback. Check your .env file.');
+    setMapError('Google Maps API Key is missing or invalid. Please configure VITE_GOOGLE_MAPS_API_KEY in .env.');
+  }
+
+  const normalizeLocation = (location) => {
+    const locationMap = {
+      'LAX Airport & Union Station': 'Los Angeles International Airport, Los Angeles, CA to Union Station, Los Angeles, CA',
+      'LAX': 'Los Angeles International Airport, Los Angeles, CA',
+      'Chennai Central Railway Station': 'Chennai Central, Chennai, India',
+      'Hyderabad Deccan Railway Station': 'Hyderabad Deccan, Hyderabad, India',
+      'Charminar': 'Charminar, Hyderabad, India',
+      'Near Charminar': 'Charminar, Hyderabad, India',
+    };
+    return locationMap[location] || location;
+  };
+
+  const drawRoute = useCallback((response, status) => {
+    if (status === 'OK' && directionsRenderer) {
+      console.log('Directions Response:', response);
+      directionsRenderer.setDirections(response);
+      if (response.routes[0] && response.routes[0].legs) {
+        const legs = response.routes[0].legs;
+        const activities = itinerary.dailyPlans[activeDay - 1].activities;
+        console.log(`Legs: ${legs.length}, Activities: ${activities.length}`);
+        // Place markers for each activity using leg start locations and last leg end location
+        activities.forEach((activity, index) => {
+          let position;
+          if (index < legs.length) {
+            position = legs[index].start_location; // Use start location for intermediate points
+          } else if (index === activities.length - 1 && legs.length > 0) {
+            position = legs[legs.length - 1].end_location; // Use end location for the last activity
+          } else {
+            console.warn(`No position for activity ${index}:`, activity);
+            // Fallback: Use the last known position or center if no legs match
+            position = index > 0 ? legs[legs.length - 1].end_location : center;
+          }
+          new google.maps.Marker({
+            map: directionsRenderer.getMap(),
+            position: position,
+            title: activity.description,
+            label: `${index + 1}`,
+          });
+        });
+      } else {
+        console.warn('No valid route or legs in response:', response);
+      }
+    } else {
+      console.error('Directions request failed with status:', status, 'Response:', response);
+      setMapError(`Failed to load route: ${status}. Locations used: ${itinerary.dailyPlans[activeDay - 1].activities.map(a => a.location).join(', ')}`);
+    }
+  }, [directionsRenderer, activeDay, itinerary.dailyPlans]);
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-12">
@@ -123,16 +181,64 @@ const TripDetails: React.FC = () => {
           </motion.div>
 
           {showMap && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: '20rem' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-              className="mb-6 rounded-lg overflow-hidden bg-gray-200 flex items-center justify-center"
+            <LoadScript
+              googleMapsApiKey={apiKey}
+              libraries={['directions']} // Using only directions library with google.maps.Marker
+              onError={(error) => {
+                console.error('Google Maps Load Error:', error);
+                setMapError('Failed to load Google Maps. Check API key or network.');
+              }}
             >
-              <p className="text-gray-500">Interactive map coming soon!</p>
-            </motion.div>
-          )}
+              <GoogleMap
+                mapContainerStyle={mapContainerStyle}
+                center={center}
+                zoom={10}
+                onLoad={(mapInstance) => {
+                  console.log('Map Loaded:', mapInstance);
+                }}
+                onUnmount={() => {
+                  setMapError(null);
+                }}
+              >
+                <TrafficLayer />
+                {itinerary.dailyPlans[activeDay - 1]?.activities.length > 1 && (
+                  <DirectionsService
+                    options={{
+                      origin: normalizeLocation(itinerary.dailyPlans[activeDay - 1].activities[0].location),
+                      destination: normalizeLocation(itinerary.dailyPlans[activeDay - 1].activities[itinerary.dailyPlans[activeDay - 1].activities.length - 1].location),
+                      waypoints: itinerary.dailyPlans[activeDay - 1].activities
+                        .slice(1, -1)
+                        .filter((item, index, self) => 
+                          index === self.findIndex((t) => t.location === item.location)
+                        )
+                        .map((activity) => ({ location: normalizeLocation(activity.location), stopover: true })),
+                      optimizeWaypoints: true,
+                      travelMode: 'DRIVING',
+                      drivingOptions: {
+                        departureTime: new Date(),
+                        trafficModel: 'optimistic',
+                      },
+                    }}
+                    callback={drawRoute}
+                  />
+                )}
+                <DirectionsRenderer
+                  options={{
+                    suppressMarkers: true,
+                  }}
+                  onLoad={(renderer) => {
+                    setDirectionsRenderer(renderer);
+                    console.log('Directions Renderer Loaded:', renderer);
+                  }}
+                  onError={(error) => {
+                    console.error('Directions Renderer Error:', error);
+                    setMapError('Failed to render route due to an error.');
+                  }}
+                />
+              </GoogleMap>
+              {mapError && <p className="text-red-600 text-center mt-2">{mapError}</p>}
+            </LoadScript>
+          ) || (showMap && <div className="mb-6 rounded-lg overflow-hidden bg-gray-200 h-[20rem] flex items-center justify-center"><p className="text-gray-500">Map failed to load. Check console for details.</p></div>)}
 
           {/* Day Tabs */}
           <motion.div variants={itemVariants} className="flex mb-6 overflow-x-auto pb-2 space-x-2">
@@ -164,24 +270,43 @@ const TripDetails: React.FC = () => {
                     Day {day.day} - {new Date(day.date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                   </h3>
 
-                  {/* Weather Info */}
+                  {/* Crowd and Weather Info */}
                   <motion.div
                     variants={itemVariants}
-                    className="mb-6 p-4 bg-white rounded-lg shadow-md flex items-center space-x-4 border-l-4 border-indigo-500"
+                    className="mb-6 p-4 bg-white rounded-lg grid grid-cols-1 md:grid-cols-2 gap-4 border-l-4 border-indigo-500"
                   >
-                    <WeatherIcon condition={day.weather?.condition || 'Unknown'} />
-                    <div>
-                      <p className="text-gray-700 font-medium flex items-center">
-                        <Sun className="h-5 w-5 mr-2 text-yellow-500" />
-                        Temp: {day.weather?.temperature || 'N/A'}°F
-                      </p>
-                      <p className="text-gray-700 font-medium flex items-center">
-                        <CloudRain className="h-5 w-5 mr-2 text-blue-500" />
-                        Rain: {day.weather?.rainProbability || 'N/A'}%
-                      </p>
-                      <p className="text-gray-600">
-                        Condition: <span className="font-medium">{day.weather?.condition || 'N/A'}</span>
-                      </p>
+                    {/* Crowd Level */}
+                    <div className="flex items-center space-x-4">
+                      <UsersIcon className="h-6 w-6 text-indigo-500" />
+                      <div>
+                        <p className="text-gray-700 font-medium">Crowd Level:</p>
+                        <p className={`text-lg font-bold ${
+                          itinerary.crowdLevel === 'high' ? 'text-red-600' : 'text-green-600'
+                        }`}>
+                          {itinerary.crowdLevel || 'N/A'}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {itinerary.crowdLevel === 'high' ? 'Consider early visits to avoid crowds.' : 'Enjoy a relaxed trip!'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Weather Info */}
+                    <div className="flex items-center space-x-4">
+                      <WeatherIcon condition={day.weather?.condition || 'Unknown'} />
+                      <div>
+                        <p className="text-gray-700 font-medium flex items-center">
+                          <Sun className="h-5 w-5 mr-2 text-yellow-500" />
+                          Temp: {day.weather?.temperature || 'N/A'}°F
+                        </p>
+                        <p className="text-gray-700 font-medium flex items-center">
+                          <CloudRain className="h-5 w-5 mr-2 text-blue-500" />
+                          Rain: {day.weather?.rainProbability || 'N/A'}%
+                        </p>
+                        <p className="text-gray-600">
+                          Condition: <span className="font-medium">{day.weather?.condition || 'N/A'}</span>
+                        </p>
+                      </div>
                     </div>
                   </motion.div>
 
@@ -248,6 +373,7 @@ const TripDetails: React.FC = () => {
           </motion.div>
         </div>
       </motion.div>
+      {mapError && <p className="text-red-600 text-center mt-2">{mapError}</p>}
     </div>
   );
 };
