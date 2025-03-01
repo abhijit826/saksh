@@ -31,24 +31,29 @@ const TripDetails: React.FC = () => {
   const [mapError, setMapError] = useState<string | null>(null);
   const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isUserIdLoading, setIsUserIdLoading] = useState(true);
 
   const itinerary = itineraryData?.itinerary || { dailyPlans: [], rawText: 'No itinerary available' };
 
   useEffect(() => {
-    // Fetch user profile to get userId
     const fetchUserProfile = async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const response = await axios.get('http://localhost:5000/api/profile', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          setUserId(response.data._id); // Assuming _id is the userId field
-        } catch (error) {
-          console.error('Error fetching user profile:', error);
-        }
+      setIsUserIdLoading(true);
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) throw new Error('No token found');
+        const response = await axios.get('http://localhost:5000/api/profile', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setUserId(response.data._id);
+        console.log('User ID fetched:', response.data._id); // Debug log
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+        setMapError('Failed to load user profile for trip saving.');
+      } finally {
+        setIsUserIdLoading(false);
       }
     };
+
     fetchUserProfile();
 
     console.log('Raw Itinerary Data:', itineraryData);
@@ -100,7 +105,9 @@ const TripDetails: React.FC = () => {
       'Charminar': 'Charminar, Hyderabad, India',
       'Near Charminar': 'Charminar, Hyderabad, India',
     };
-    return locationMap[location] || location;
+    const normalized = locationMap[location] || location;
+    console.log(`Normalizing ${location} to ${normalized}`);
+    return normalized;
   };
 
   const getBookingUrl = () => {
@@ -121,10 +128,13 @@ const TripDetails: React.FC = () => {
   };
 
   const saveTrip = async () => {
+    if (!userId) {
+      alert('User ID is not loaded. Please try again or log in.');
+      return;
+    }
     try {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No token found');
-      if (!userId) throw new Error('User ID not loaded');
       const tripData = {
         userId,
         destination: itinerary.destination,
@@ -133,6 +143,7 @@ const TripDetails: React.FC = () => {
         companions: preferences.companions || 'unknown',
         activities: itinerary.dailyPlans.flatMap(day => day.activities.map(act => act.description || act.location)),
       };
+      console.log('Sending trip data:', tripData); // Debug log
       const response = await axios.post('http://localhost:5000/api/trips', tripData, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -145,6 +156,10 @@ const TripDetails: React.FC = () => {
   };
 
   const handleBookNow = () => {
+    if (isUserIdLoading || !userId) {
+      alert('Please wait for user data to load before booking.');
+      return;
+    }
     const bookingUrl = getBookingUrl();
     console.log('Redirecting to:', bookingUrl);
     window.open(bookingUrl, '_blank');
@@ -152,8 +167,8 @@ const TripDetails: React.FC = () => {
   };
 
   const drawRoute = useCallback((response, status) => {
+    console.log('Directions Response:', response, 'Status:', status);
     if (status === 'OK' && directionsRenderer) {
-      console.log('Directions Response:', response);
       directionsRenderer.setDirections(response);
       if (response.routes[0] && response.routes[0].legs) {
         const legs = response.routes[0].legs;
@@ -179,6 +194,8 @@ const TripDetails: React.FC = () => {
       } else {
         console.warn('No valid route or legs in response:', response);
       }
+    } else if (status === 'ZERO_RESULTS') {
+      setMapError('No route found between the selected locations. Please check the addresses or try a different travel mode.');
     } else {
       console.error('Directions request failed with status:', status, 'Response:', response);
       setMapError(`Failed to load route: ${status}. Locations used: ${itinerary.dailyPlans[activeDay - 1].activities.map(a => a.location).join(', ')}`);
@@ -196,7 +213,7 @@ const TripDetails: React.FC = () => {
         {/* Header Section */}
         <div className="relative h-64 sm:h-80 bg-gradient-to-r from-indigo-600 to-purple-700">
           <img
-            src="https://thetourwala.com/wp-content/uploads/2024/12/F.jpg"
+            src="https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1974&q=80"
             alt={itinerary.destination}
             className="w-full h-full object-cover opacity-40"
           />
@@ -250,9 +267,10 @@ const TripDetails: React.FC = () => {
               googleMapsApiKey={apiKey}
               libraries={['directions']}
               onError={(error) => {
-                console.error('Google Maps Load Error:', error);
-                setMapError('Failed to load Google Maps. Check API key or network.');
+                console.error('Google Maps LoadScript Error:', error);
+                setMapError('Failed to load Google Maps libraries. Check API key and library permissions.');
               }}
+              onLoad={() => console.log('Google Maps Libraries Loaded Successfully')}
             >
               <GoogleMap
                 mapContainerStyle={mapContainerStyle}
@@ -278,11 +296,7 @@ const TripDetails: React.FC = () => {
                         )
                         .map((activity) => ({ location: normalizeLocation(activity.location), stopover: true })),
                       optimizeWaypoints: true,
-                      travelMode: 'DRIVING',
-                      drivingOptions: {
-                        departureTime: new Date(),
-                        trafficModel: 'optimistic',
-                      },
+                      travelMode: google.maps.TravelMode.WALKING,
                     }}
                     callback={drawRoute}
                   />
@@ -432,6 +446,7 @@ const TripDetails: React.FC = () => {
                 whileHover={{ scale: 1.05 }}
                 onClick={handleBookNow}
                 className="px-6 py-3 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors font-medium flex items-center"
+                disabled={isUserIdLoading || !userId}
               >
                 <span>Book Now</span>
               </motion.button>
