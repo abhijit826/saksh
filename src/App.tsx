@@ -11,6 +11,7 @@ import Navbar from './components/Navbar';
 import AuthPage from './components/auth/AuthPage';
 import Logout from './components/auth/Logout';
 import ProtectedRoute from './components/ProtectedRoute';
+import EditProfile from './components/EditProfile';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
         <Route path="/mytrips" element={<ProtectedRoute><MyTrips /></ProtectedRoute>} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/logout" element={<Logout />} />
+        <Route path="/edit-profile" element={<EditProfile />} />
       </Routes>
     </Router>
   );

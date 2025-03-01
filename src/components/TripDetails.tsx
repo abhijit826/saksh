@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   MapPin, 
@@ -18,9 +18,11 @@ import {
   Users as UsersIcon,
 } from 'lucide-react';
 import { GoogleMap, LoadScript, DirectionsService, DirectionsRenderer, TrafficLayer } from '@react-google-maps/api';
+import axios from 'axios';
 
 const TripDetails: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const itineraryData = location.state?.itinerary;
   const preferences = location.state?.preferences;
 
@@ -28,10 +30,27 @@ const TripDetails: React.FC = () => {
   const [showMap, setShowMap] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const itinerary = itineraryData?.itinerary || { dailyPlans: [], rawText: 'No itinerary available' };
 
   useEffect(() => {
+    // Fetch user profile to get userId
+    const fetchUserProfile = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const response = await axios.get('http://localhost:5000/api/profile', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setUserId(response.data._id); // Assuming _id is the userId field
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+        }
+      }
+    };
+    fetchUserProfile();
+
     console.log('Raw Itinerary Data:', itineraryData);
     console.log('Extracted Itinerary:', itinerary);
     console.log('Preferences:', preferences);
@@ -84,6 +103,54 @@ const TripDetails: React.FC = () => {
     return locationMap[location] || location;
   };
 
+  const getBookingUrl = () => {
+    const startDate = itinerary.startDate || new Date().toISOString().split('T')[0];
+    const destination = normalizeLocation(itinerary.destination || '');
+    const activities = itinerary.dailyPlans[activeDay - 1]?.activities || [];
+    const origin = activities.length > 0 ? normalizeLocation(activities[0].location) : destination;
+
+    console.log('Itinerary Data for Booking:', { startDate, destination, origin, activities });
+
+    if (destination.includes('mas') || destination.includes('hyb') || activities.some(a => a.location.toLowerCase().includes('chennai') || a.location.toLowerCase().includes('hyderabad'))) {
+      return `https://www.irctc.co.in/nget/train-search?from=${encodeURIComponent(origin)}&to=${encodeURIComponent(destination)}&date=${encodeURIComponent(startDate)}`;
+    } else if (destination.includes('los angeles') || destination.includes('lax') || activities.some(a => a.location.toLowerCase().includes('los angeles') || a.location.toLowerCase().includes('lax'))) {
+      return `https://www.expedia.com/Flights-Search?mode=search&flight-type=on&destination=${encodeURIComponent('Los Angeles, CA (LAX-Los Angeles Intl.)')}&d1=${encodeURIComponent(startDate)}`;
+    } else {
+      return `https://www.makemytrip.com/flights/?fromCity=${encodeURIComponent(origin)}&toCity=${encodeURIComponent(destination)}&tripDate=${encodeURIComponent(startDate)}`;
+    }
+  };
+
+  const saveTrip = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No token found');
+      if (!userId) throw new Error('User ID not loaded');
+      const tripData = {
+        userId,
+        destination: itinerary.destination,
+        duration: preferences.duration || 'unknown',
+        budget: preferences.budget || 'unknown',
+        companions: preferences.companions || 'unknown',
+        activities: itinerary.dailyPlans.flatMap(day => day.activities.map(act => act.description || act.location)),
+      };
+      const response = await axios.post('http://localhost:5000/api/trips', tripData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log('Trip saved:', response.data);
+      navigate('/my-trips');
+    } catch (error) {
+      console.error('Error saving trip:', error.response ? error.response.data : error.message);
+      alert('Failed to save trip: ' + (error.response ? JSON.stringify(error.response.data) : error.message));
+    }
+  };
+
+  const handleBookNow = () => {
+    const bookingUrl = getBookingUrl();
+    console.log('Redirecting to:', bookingUrl);
+    window.open(bookingUrl, '_blank');
+    saveTrip();
+  };
+
   const drawRoute = useCallback((response, status) => {
     if (status === 'OK' && directionsRenderer) {
       console.log('Directions Response:', response);
@@ -92,16 +159,14 @@ const TripDetails: React.FC = () => {
         const legs = response.routes[0].legs;
         const activities = itinerary.dailyPlans[activeDay - 1].activities;
         console.log(`Legs: ${legs.length}, Activities: ${activities.length}`);
-        // Place markers for each activity using leg start locations and last leg end location
         activities.forEach((activity, index) => {
           let position;
           if (index < legs.length) {
-            position = legs[index].start_location; // Use start location for intermediate points
+            position = legs[index].start_location;
           } else if (index === activities.length - 1 && legs.length > 0) {
-            position = legs[legs.length - 1].end_location; // Use end location for the last activity
+            position = legs[legs.length - 1].end_location;
           } else {
             console.warn(`No position for activity ${index}:`, activity);
-            // Fallback: Use the last known position or center if no legs match
             position = index > 0 ? legs[legs.length - 1].end_location : center;
           }
           new google.maps.Marker({
@@ -131,7 +196,7 @@ const TripDetails: React.FC = () => {
         {/* Header Section */}
         <div className="relative h-64 sm:h-80 bg-gradient-to-r from-indigo-600 to-purple-700">
           <img
-            src="https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1974&q=80"
+            src="https://thetourwala.com/wp-content/uploads/2024/12/F.jpg"
             alt={itinerary.destination}
             className="w-full h-full object-cover opacity-40"
           />
@@ -156,7 +221,7 @@ const TripDetails: React.FC = () => {
                 variants={itemVariants}
                 whileHover={{ scale: 1.05 }}
                 onClick={() => setShowMap(!showMap)}
-                className="flex items-center px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-all"
+                className="flex items-center px-4 py-3 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-all"
               >
                 <Map className="h-5 w-5 mr-2" />
                 <span>{showMap ? 'Hide Map' : 'Show Map'}</span>
@@ -164,7 +229,7 @@ const TripDetails: React.FC = () => {
               <motion.button
                 variants={itemVariants}
                 whileHover={{ scale: 1.05 }}
-                className="flex items-center px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-all"
+                className="flex items-center px-4 py-3 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-all"
               >
                 <Download className="h-5 w-5 mr-2" />
                 <span>Download</span>
@@ -172,7 +237,7 @@ const TripDetails: React.FC = () => {
               <motion.button
                 variants={itemVariants}
                 whileHover={{ scale: 1.05 }}
-                className="flex items-center px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-all"
+                className="flex items-center px-4 py-3 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-all"
               >
                 <Share2 className="h-5 w-5 mr-2" />
                 <span>Share</span>
@@ -183,7 +248,7 @@ const TripDetails: React.FC = () => {
           {showMap && (
             <LoadScript
               googleMapsApiKey={apiKey}
-              libraries={['directions']} // Using only directions library with google.maps.Marker
+              libraries={['directions']}
               onError={(error) => {
                 console.error('Google Maps Load Error:', error);
                 setMapError('Failed to load Google Maps. Check API key or network.');
@@ -365,6 +430,7 @@ const TripDetails: React.FC = () => {
               </Link>
               <motion.button
                 whileHover={{ scale: 1.05 }}
+                onClick={handleBookNow}
                 className="px-6 py-3 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors font-medium flex items-center"
               >
                 <span>Book Now</span>
