@@ -5,13 +5,6 @@ import axios from 'axios';
 import { MapPin, Clock, CreditCard, Users, ArrowRight, Loader } from 'lucide-react';
 import { TripPreferences } from '../types';
 
-const airportCodes = [
-  { code: 'JFK', name: 'John F. Kennedy International Airport' },
-  { code: 'LAX', name: 'Los Angeles International Airport' },
-  { code: 'ORD', name: "O'Hare International Airport" },
-  // Add more airport codes as needed
-];
-
 const TripForm: React.FC = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
