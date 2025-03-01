@@ -61,7 +61,7 @@ const Footer: React.FC = () => {
             <a href="#" className="text-gray-400 hover:text-gray-300">Terms</a> */}
           </div>
           <p className="mt-8 text-base text-gray-400 md:mt-0 md:order-1">
-          TEAM ~ SAKSHAM  &copy; 2025 . All rights reserved.
+          TEAM ~ SAKSHAM  &copy; 2025 . All rights reserved[Made at IIIT Sricity].
           </p>
         </div>
       </div>
