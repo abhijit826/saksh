@@ -30,11 +30,14 @@ const TripForm: React.FC = () => {
     setIsGenerating(true);
     try {
       const response = await axios.post('http://localhost:5000/api/generate-itinerary', preferences);
-      console.log('API Response:', response.data); // Debugging: Log the API response
-      navigate('/trip-details', { state: { itinerary: response.data } });
+      console.log('Full API Response:', response); // Log entire response object
+      console.log('Response Data:', response.data); // Log just the data
+      // Pass both itinerary and preferences to TripDetails
+      navigate('/trip-details', { state: { itinerary: response.data, preferences } });
     } catch (error) {
-      console.error('Error generating itinerary:', error);
-      alert('Failed to generate itinerary. Please try again.');
+      console.error('Error generating itinerary:', error.response ? error.response.data : error.message);
+      console.error('Full error details:', error.response);
+      alert('Failed to generate itinerary: ' + (error.response ? JSON.stringify(error.response.data) : error.message));
     } finally {
       setIsGenerating(false);
     }
@@ -78,12 +81,18 @@ const TripForm: React.FC = () => {
           />
         )}
         <div className="flex justify-between">
-          {step > 1 && <button onClick={prevStep} className="px-6 py-3 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">Back</button>}
+          {step > 1 && (
+            <button onClick={prevStep} className="px-6 py-3 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">
+              Back
+            </button>
+          )}
           {step < stepComponents.length ? (
             <button
               onClick={nextStep}
               disabled={!preferences[field]}
-              className={`flex items-center space-x-2 px-6 py-3 rounded-lg ${preferences[field] ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+              className={`flex items-center space-x-2 px-6 py-3 rounded-lg ${
+                preferences[field] ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
             >
               <span>Next</span>
               <ArrowRight className="h-5 w-5" />
@@ -92,9 +101,21 @@ const TripForm: React.FC = () => {
             <button
               onClick={generateTrip}
               disabled={!preferences[field] || isGenerating}
-              className={`flex items-center space-x-2 px-6 py-3 rounded-lg ${preferences[field] && !isGenerating ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+              className={`flex items-center space-x-2 px-6 py-3 rounded-lg ${
+                preferences[field] && !isGenerating ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
             >
-              {isGenerating ? <><Loader className="h-5 w-5 animate-spin" /><span>Generating...</span></> : <><span>Generate Trip</span><ArrowRight className="h-5 w-5" /></>}
+              {isGenerating ? (
+                <>
+                  <Loader className="h-5 w-5 animate-spin" />
+                  <span>Generating...</span>
+                </>
+              ) : (
+                <>
+                  <span>Generate Trip</span>
+                  <ArrowRight className="h-5 w-5" />
+                </>
+              )}
             </button>
           )}
         </div>
@@ -110,7 +131,13 @@ const TripForm: React.FC = () => {
         <div className="mb-8 flex items-center">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <React.Fragment key={i}>
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full ${i <= step ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600'}`}>{i}</div>
+              <div
+                className={`flex items-center justify-center w-10 h-10 rounded-full ${
+                  i <= step ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600'
+                }`}
+              >
+                {i}
+              </div>
               {i < 6 && <div className={`flex-1 h-1 mx-2 ${i < step ? 'bg-indigo-600' : 'bg-gray-200'}`}></div>}
             </React.Fragment>
           ))}

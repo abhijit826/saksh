@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  CreditCard, 
-  FileText, // Use FileText instead of Passport
-  Plus, 
-  Edit, 
-  Trash2, 
-  Lock, 
-  Shield, 
+import axios from 'axios';
+import {
+  CreditCard,
+  FileText,
+  Plus,
+  Edit,
+  Trash2,
+  Lock,
+  Shield,
   AlertCircle,
   Syringe,
   Car,
@@ -16,9 +17,9 @@ import {
   Briefcase,
 } from 'lucide-react';
 
-// Define TravelDocument interface inline
+// Define TravelDocument interface
 interface TravelDocument {
-  id: string;
+  _id: string; // Changed from 'id' to '_id' for MongoDB
   type: 'passport' | 'visa' | 'creditCard' | 'vaccination' | 'drivingLicense' | 'internationalPermit' | 'nationalId' | 'insurance';
   number: string;
   expiryDate: string;
@@ -37,20 +38,8 @@ interface TravelDocument {
   coverageDetails?: string;
 }
 
-// Mock data
-const mockDocuments: TravelDocument[] = [
-  { type: 'passport', id: 'doc-1', number: 'P12345678', expiryDate: '2028-05-15', country: 'United States' },
-  { type: 'visa', id: 'doc-2', number: 'V87654321', expiryDate: '2023-12-10', country: 'Japan', embassy: { name: 'Embassy of Japan', address: '2520 Massachusetts Ave', phone: '+1 202-238-6700', email: 'info@us.emb-japan.go.jp' } },
-  { type: 'creditCard', id: 'doc-3', number: '**** **** **** 4321', expiryDate: '2026-09-30' },
-  { type: 'vaccination', id: 'doc-4', number: 'VAC-456789', expiryDate: '2025-12-31', vaccineType: 'COVID-19', doseDates: ['2021-03-15', '2021-04-12'], issuer: 'CDC', country: 'United States' },
-  { type: 'drivingLicense', id: 'doc-5', number: 'DL-987654', expiryDate: '2027-06-30', country: 'United States', issuer: 'DMV California' },
-  { type: 'internationalPermit', id: 'doc-6', number: 'IP-123456', expiryDate: '2026-01-15', country: 'United States', issuer: 'AAA' },
-  { type: 'nationalId', id: 'doc-7', number: 'NID-789123', expiryDate: '2030-09-01', country: 'United States', issuer: 'Government' },
-  { type: 'insurance', id: 'doc-8', number: 'INS-654321', expiryDate: '2025-11-30', insuranceProvider: 'Global Travel Insurance', policyNumber: 'GTI-2023-654321', coverageDetails: 'Medical & Trip Cancellation' },
-];
-
 const TravelWallet: React.FC = () => {
-  const [documents, setDocuments] = useState<TravelDocument[]>(mockDocuments);
+  const [documents, setDocuments] = useState<TravelDocument[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<TravelDocument | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
@@ -67,10 +56,33 @@ const TravelWallet: React.FC = () => {
     coverageDetails: '',
   });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch documents on mount
+  useEffect(() => {
+    fetchDocuments();
+  }, []);
+
+  const fetchDocuments = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token'); // Assuming JWT token from auth
+      const response = await axios.get('http://localhost:5000/api/travel-wallet/documents', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setDocuments(response.data);
+    } catch (err) {
+      setError('Failed to fetch documents');
+      console.error('Fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getDocumentIcon = (type: string) => {
     switch (type) {
-      case 'passport': return <FileText className="h-6 w-6 text-blue-500" />; // Replaced Passport with FileText
+      case 'passport': return <FileText className="h-6 w-6 text-blue-500" />;
       case 'visa': return <FileText className="h-6 w-6 text-green-500" />;
       case 'creditCard': return <CreditCard className="h-6 w-6 text-purple-500" />;
       case 'vaccination': return <Syringe className="h-6 w-6 text-red-500" />;
@@ -127,14 +139,13 @@ const TravelWallet: React.FC = () => {
     setShowEditForm(false);
   };
 
-  const handleAddDocument = () => {
+  const handleAddDocument = async () => {
     if (!formData.number || !formData.expiryDate) {
       alert('Please fill in all required fields');
       return;
     }
 
-    const newDocument: TravelDocument = {
-      id: `doc-${Date.now()}`,
+    const newDocument: Partial<TravelDocument> = {
       type: formData.type as TravelDocument['type'],
       number: formData.number,
       expiryDate: formData.expiryDate,
@@ -156,60 +167,87 @@ const TravelWallet: React.FC = () => {
       };
     }
 
-    setDocuments([...documents, newDocument]);
-    setSelectedDocument(newDocument);
-    resetForm();
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        'http://localhost:5000/api/travel-wallet/documents',
+        newDocument,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setDocuments([...documents, response.data]);
+      setSelectedDocument(response.data);
+      resetForm();
+    } catch (error) {
+      console.error('Error adding document:', error);
+      alert('Failed to add document');
+    }
   };
 
-  const handleEditDocument = () => {
+  const handleEditDocument = async () => {
     if (!selectedDocument || !formData.number || !formData.expiryDate) {
       alert('Please fill in all required fields');
       return;
     }
 
-    const updatedDocuments = documents.map(doc => {
-      if (doc.id === selectedDocument.id) {
-        const updatedDoc: TravelDocument = {
-          ...doc,
-          type: formData.type as TravelDocument['type'],
-          number: formData.number,
-          expiryDate: formData.expiryDate,
-          country: formData.country || undefined,
-          issuer: formData.issuer || undefined,
-          vaccineType: formData.vaccineType || undefined,
-          doseDates: formData.doseDates || doc.doseDates,
-          insuranceProvider: formData.insuranceProvider || undefined,
-          policyNumber: formData.policyNumber || undefined,
-          coverageDetails: formData.coverageDetails || undefined,
-        };
+    const updatedDocument: Partial<TravelDocument> = {
+      type: formData.type as TravelDocument['type'],
+      number: formData.number,
+      expiryDate: formData.expiryDate,
+      country: formData.country || undefined,
+      issuer: formData.issuer || undefined,
+      vaccineType: formData.vaccineType || undefined,
+      doseDates: formData.doseDates || selectedDocument.doseDates,
+      insuranceProvider: formData.insuranceProvider || undefined,
+      policyNumber: formData.policyNumber || undefined,
+      coverageDetails: formData.coverageDetails || undefined,
+    };
 
-        if (formData.type === 'visa' && formData.country) {
-          updatedDoc.embassy = doc.embassy || {
-            name: `Embassy of ${formData.country}`,
-            address: 'Address will be fetched from API',
-            phone: '+1 123-456-7890',
-            email: `info@${formData.country.toLowerCase().replace(/\s+/g, '')}.embassy.com`,
-          };
-        } else {
-          delete updatedDoc.embassy;
-        }
+    if (formData.type === 'visa' && formData.country) {
+      updatedDocument.embassy = selectedDocument.embassy || {
+        name: `Embassy of ${formData.country}`,
+        address: 'Address will be fetched from API',
+        phone: '+1 123-456-7890',
+        email: `info@${formData.country.toLowerCase().replace(/\s+/g, '')}.embassy.com`,
+      };
+    } else {
+      delete updatedDocument.embassy;
+    }
 
-        return updatedDoc;
-      }
-      return doc;
-    });
-
-    setDocuments(updatedDocuments);
-    setSelectedDocument(updatedDocuments.find(doc => doc.id === selectedDocument.id) || null);
-    setShowEditForm(false);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.put(
+        `http://localhost:5000/api/travel-wallet/documents/${selectedDocument._id}`,
+        updatedDocument,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const updatedDocs = documents.map((doc) =>
+        doc._id === selectedDocument._id ? response.data : doc
+      );
+      setDocuments(updatedDocs);
+      setSelectedDocument(response.data);
+      setShowEditForm(false);
+    } catch (error) {
+      console.error('Error updating document:', error);
+      alert('Failed to update document');
+    }
   };
 
-  const handleDeleteDocument = () => {
+  const handleDeleteDocument = async () => {
     if (!selectedDocument) return;
-    const updatedDocuments = documents.filter(doc => doc.id !== selectedDocument.id);
-    setDocuments(updatedDocuments);
-    setSelectedDocument(null);
-    setShowDeleteConfirm(false);
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:5000/api/travel-wallet/documents/${selectedDocument._id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const updatedDocs = documents.filter((doc) => doc._id !== selectedDocument._id);
+      setDocuments(updatedDocs);
+      setSelectedDocument(null);
+      setShowDeleteConfirm(false);
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      alert('Failed to delete document');
+    }
   };
 
   const startEditDocument = () => {
@@ -217,7 +255,7 @@ const TravelWallet: React.FC = () => {
     setFormData({
       type: selectedDocument.type,
       number: selectedDocument.number,
-      expiryDate: selectedDocument.expiryDate,
+      expiryDate: selectedDocument.expiryDate.split('T')[0], // Format for input type="date"
       country: selectedDocument.country || '',
       issuer: selectedDocument.issuer || '',
       vaccineType: selectedDocument.vaccineType || '',
@@ -273,7 +311,7 @@ const TravelWallet: React.FC = () => {
         />
       </div>
 
-      {(formData.type === 'passport' || formData.type === 'visa' || formData.type === 'vaccination' || 
+      {(formData.type === 'passport' || formData.type === 'visa' || formData.type === 'vaccination' ||
         formData.type === 'drivingLicense' || formData.type === 'internationalPermit' || formData.type === 'nationalId') && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
@@ -288,7 +326,7 @@ const TravelWallet: React.FC = () => {
         </div>
       )}
 
-      {(formData.type === 'vaccination' || formData.type === 'drivingLicense' || 
+      {(formData.type === 'vaccination' || formData.type === 'drivingLicense' ||
         formData.type === 'internationalPermit' || formData.type === 'nationalId') && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Issuer</label>
@@ -406,6 +444,9 @@ const TravelWallet: React.FC = () => {
         </p>
       </div>
 
+      {loading && <p className="text-gray-600">Loading documents...</p>}
+      {error && <p className="text-red-600">{error}</p>}
+
       <div className="bg-indigo-50 rounded-xl p-6 mb-8">
         <div className="flex items-start">
           <div className="bg-indigo-100 p-3 rounded-full">
@@ -438,7 +479,7 @@ const TravelWallet: React.FC = () => {
               </button>
             </div>
 
-            {documents.length === 0 ? (
+            {documents.length === 0 && !loading ? (
               <div className="text-center py-8">
                 <p className="text-gray-500">No documents yet. Add your first document.</p>
               </div>
@@ -448,10 +489,10 @@ const TravelWallet: React.FC = () => {
                   const expiryStatus = getExpiryStatus(doc.expiryDate);
                   return (
                     <motion.div
-                      key={doc.id}
+                      key={doc._id} // Changed from id to _id
                       whileHover={{ scale: 1.02 }}
                       className={`p-4 rounded-lg cursor-pointer ${
-                        selectedDocument?.id === doc.id
+                        selectedDocument?._id === doc._id
                           ? 'bg-indigo-50 border border-indigo-200'
                           : 'bg-gray-50 hover:bg-gray-100'
                       }`}
@@ -607,9 +648,9 @@ const TravelWallet: React.FC = () => {
                   </div>
                 )}
 
-                {(selectedDocument.type === 'visa' || selectedDocument.type === 'vaccination' || 
-                  selectedDocument.type === 'drivingLicense' || selectedDocument.type === 'internationalPermit' || 
-                  selectedDocument.type === 'nationalId' || selectedDocument.type === 'insurance') && 
+                {(selectedDocument.type === 'visa' || selectedDocument.type === 'vaccination' ||
+                  selectedDocument.type === 'drivingLicense' || selectedDocument.type === 'internationalPermit' ||
+                  selectedDocument.type === 'nationalId' || selectedDocument.type === 'insurance') &&
                   getExpiryStatus(selectedDocument.expiryDate).status !== 'valid' && (
                   <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-4">
                     <div className="flex items-start">
@@ -619,7 +660,7 @@ const TravelWallet: React.FC = () => {
                           {selectedDocument.type.charAt(0).toUpperCase() + selectedDocument.type.slice(1)} Expiring Soon
                         </h3>
                         <p className="text-sm text-yellow-700 mt-1">
-                          Your {getDocumentTitle(selectedDocument.type).toLowerCase()} is expiring on 
+                          Your {getDocumentTitle(selectedDocument.type).toLowerCase()} is expiring on{' '}
                           {new Date(selectedDocument.expiryDate).toLocaleDateString()}. Consider renewing it.
                         </p>
                       </div>
