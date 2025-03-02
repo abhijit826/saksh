@@ -4,7 +4,7 @@
 ![GitHub issues](https://img.shields.io/github/issues/abhijit826/saksh)
 ![GitHub last commit](https://img.shields.io/github/last-commit/abhijit826/saksh)
 
-Welcome to the frontend of the Saksh Travel Planner! This is a React-based web application designed to help users plan their trips, view itineraries, and interact with a dynamic map interface. The frontend is built with modern tools and is intended to work with a backend (currently in development) for full functionality.
+Welcome to the AI TARVEL Planner! This is a React-based web application designed to help users plan their trips, view itineraries, and interact with a dynamic map interface. The frontend is built with modern tools and is intended to work with a backend (currently in development) for full functionality.
 
 ## Table of Contents
 - [Features](#features)
