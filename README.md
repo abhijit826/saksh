@@ -55,6 +55,8 @@ Welcome to the AI TARVEL Planner! This is a React-based web application designed
 - npm or yarn
 - Google Maps API Key
 
+### Backend -  npx nodemon server.js
+
 ### Setup
 1. **Clone the Repository**
    ```bash
