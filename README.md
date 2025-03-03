@@ -62,4 +62,4 @@ Welcome to the AI TARVEL Planner! This is a React-based web application designed
    ```bash
    git clone https://github.com/abhijit826/saksh.git
    cd saksh
-   Backend npx nodemon server.js
+   Backend-- npx nodemon server.js
