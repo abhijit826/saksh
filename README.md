@@ -37,6 +37,23 @@ Welcome to the AI TARVEL Planner! This is a React-based web application designed
 - Navigation between trip creation, details, and profile pages.
 - Blockchain-Secured Documents
 
+## Future Enhancements
+- AI-Powered Personalization
+   - Dynamic Itinerary Optimization: Use reinforcement learning to adapt plans based on real-time user behavior.
+   - Personalized Recommendations: Leverage collaborative filtering (like Netflix) to suggest places based on user preferences and past trips.
+   - Sentiment Analysis: Analyze user reviews to filter hidden gems vs. overhyped locations.
+
+- Augmented Reality (AR) & Immersion
+   - AR-based City Tours: Allow users to experience historical sites & landmarks in AR before visiting.
+   - VR Travel Previews: Let users experience hotels, destinations, and activities in 360-degree VR before booking.
+   - AI-powered AR Navigation: Guide users in real-time using AR overlays on their phone cameras.
+
+- IoT & Smart Assistants
+   - Voice AI Assistant: A virtual travel concierge for instant travel advice.
+   - IoT-Enabled Smart Hotels: Connect itinerary plans with smart hotels for automated check-ins & room customizations.
+   - Wearable Integration: Sync with smartwatches for navigation & health tracking while traveling.
+
+
 ## Technologies
 - **Frontend**:
   - React
